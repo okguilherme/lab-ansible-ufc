@@ -1,0 +1,4 @@
+*.key
+*.pem
+id_ansible
+.ansible_cache
