@@ -1,0 +1,8 @@
+---
+- name: Prática de Redes - Ansible
+  hosts: servidores
+  tasks:
+    - name: Criar o arquivo hello world
+      ansible.builtin.copy:
+        content: "Hello World! Prática realizada por Guilherme e Thiago.\n"
+        dest: ~/hello.txt
