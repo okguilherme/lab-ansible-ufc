@@ -1,8 +1,79 @@
 ---
-- name: Prática de Redes - Ansible
+- name: Automação de Certificados SSL - Estágio UFC Quixadá
   hosts: servidores
+  become: yes
+
   tasks:
-    - name: Criar o arquivo hello world
+    # --- PARTE 1: APACHE (Arquivos Separados) ---
+    - name: Atualizar certificados no Apache (Dunas/Romeirão/Almoxarifado)
       ansible.builtin.copy:
-        content: "Hello World! Prática realizada por Guilherme e Thiago.\n"
-        dest: ~/hello.txt
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+      loop:
+        - { src: "certificado_estagio.cert", dest: "/etc/ssl/certs/_.quixada.ufc.br.cer" }
+        - { src: "intemediate_estagio.pem", dest: "/etc/ssl/certs/intermediate-2020.pem" }
+        - { src: "gs_root_estagio.pem", dest: "/etc/ssl/certs/gs_root.pem" }
+        - { src: "quixada_estagio.key", dest: "/etc/ssl/private/newquixada.key" }
+      when: "'apache_servers' in group_names"
+      notify: Restart Apache
+
+    # --- PARTE 2: DOCKER/TRAEFIK/GITLAB (Arquivos Específicos e Restart de Container) ---
+    - name: Atualizar certificados no GitLab (Marizão)
+      ansible.builtin.copy:
+        dest: "/opt/sistemas/gitlab/config/certs/git2.quixada.ufc.br.crt"
+        content: |
+          {{ lookup('file', 'certificado_estagio.cert') }}
+          {{ lookup('file', 'intemediate_estagio.pem') }}
+          {{ lookup('file', 'gs_root_estagio.pem') }}
+      when: inventory_hostname == "marizao-gitlab"
+      notify: Restart GitLab
+
+    - name: Atualizar certificados no Traefik (Alfredão)
+      ansible.builtin.copy:
+        src: "certificado_estagio.cert"
+        dest: "/opt/sistemas/traefik/certs/newquixadawild.cer"
+      when: inventory_hostname == "alfredao-traefik"
+      notify: Restart Traefik
+
+    # --- PARTE 3: HAPROXY (O arquivo unificado .pem com a Chave no final) ---
+    - name: Gerar bundle unificado para HAProxy (Independência)
+      ansible.builtin.copy:
+        dest: "/etc/ssl/certs/haproxy.pem"
+        content: |
+          {{ lookup('file', 'certificado_estagio.cert') }}
+          {{ lookup('file', 'intemediate_estagio.pem') }}
+          {{ lookup('file', 'gs_root_estagio.pem') }}
+          {{ lookup('file', 'quixada_estagio.key') }}
+      when: inventory_hostname == "independencia-haproxy"
+      notify: Restart HAProxy
+
+    # --- PARTE 4: VPL (Colina) ---
+    - name: Atualizar VPL (Colina)
+      ansible.builtin.copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+      loop:
+        - { src: "certificado_estagio.cert", dest: "/etc/vpl/cert.pem" }
+        - { src: "quixada_estagio.key", dest: "/etc/vpl/key.pem" }
+      when: inventory_hostname == "colina-vpl"
+      notify: Restart VPL
+
+  handlers:
+    - name: Restart Apache
+      ansible.builtin.service:
+        name: apache2
+        state: restarted
+
+    - name: Restart GitLab
+      ansible.builtin.shell: docker restart gitlab
+
+    - name: Restart Traefik
+      ansible.builtin.shell: docker restart traefik
+
+    - name: Restart HAProxy
+      ansible.builtin.shell: docker restart haproxy
+
+    - name: Restart VPL
+      ansible.builtin.service:
+        name: vpl-jail-system
+        state: restarted
