@@ -15,7 +15,7 @@
         - { src: "gs_root_estagio.pem", dest: "/etc/ssl/certs/gs_root.pem" }
         - { src: "quixada_estagio.key", dest: "/etc/ssl/private/newquixada.key" }
       when: inventory_hostname in ['dunas-moodle', 'romeirao', 'mangueirao']
-      notify: Restart Apache
+        #notify: Restart Apache
 
     # --- ALMOXARIFADO (Caminho Específico) ---
     - name: Atualizar Almoxarifado
@@ -28,7 +28,7 @@
         - { src: "gs_root_estagio.pem", dest: "/etc/ssl/certs/chaves/gs_root.pem" }
         - { src: "quixada_estagio.key", dest: "/etc/ssl/certs/chaves/newquixada.key" }
       when: inventory_hostname == "almoxarifado"
-      notify: Restart Apache
+        #notify: Restart Apache
 
     # --- BUNDLES (Marizão, Independência, Email, Coliseu) ---
     - name: Gerar Bundles Unificados
@@ -45,7 +45,7 @@
         - { dest: "/etc/ssl/certs/iRedMail.crt", include_key: false, name: "email-iredmail" }
         - { dest: "/etc/nginx/certs/quixada.ufc.br.chained.crt", include_key: false, name: "coliseu-sonar" }
       when: inventory_hostname == item.name
-      notify: "Restart {{ 'Docker' if 'gitlab' in item.dest or 'haproxy' in item.dest else 'Service' }}"
+        #notify: "Restart {{ 'Docker' if 'gitlab' in item.dest or 'haproxy' in item.dest else 'Service' }}"
 
     # --- PARAMBU (Nginx Simples) ---
     - name: Atualizar Parambu (Nginx)
@@ -53,7 +53,7 @@
         src: "certificado_estagio.cert"
         dest: "/etc/nginx/ssl/_.quixada.ufc.br.crt"
       when: inventory_hostname == "parambu"
-      notify: Restart Nginx
+       #notify: Restart Nginx
 
     # --- VPL (Colina) ---
     - name: Atualizar VPL (Colina)
@@ -64,7 +64,7 @@
         - { src: "certificado_estagio.cert", dest: "/etc/vpl/cert.pem" }
         - { src: "quixada_estagio.key", dest: "/etc/vpl/key.pem" }
       when: inventory_hostname == "colina-vpl"
-      notify: Restart VPL
+        #notify: Restart VPL
 
   handlers:
     - name: Restart Apache
