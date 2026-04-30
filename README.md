@@ -1,7 +1,3 @@
-Com certeza, Guilherme. Vou manter exatamente a lógica que validamos e que funcionou nos seus testes de terminal, sem as adições automáticas de backup para não alterar o comportamento do seu Playbook original.
-
-Aqui está a versão final e limpa do seu **README.md** para copiar e colar:
-
 ---
 
 # 🚀 Automação de Certificados SSL - Infraestrutura UFC Quixadá
@@ -78,4 +74,3 @@ ansible-playbook -i hosts.ini producao_estagio.yml -K
 
 ---
 **Data:** 23/04/2026
-``
