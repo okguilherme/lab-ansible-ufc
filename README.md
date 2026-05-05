@@ -10,13 +10,18 @@ Instale as dependências no computador que irá rodar o script:
 sudo apt update
 sudo apt install ansible sshpass -y
 ```
+## ⚠️ Observações Técnicas
+
+*   **Gestão de Variáveis:** No arquivo `hosts.ini`, utilizamos `ansible_user` para o login e `ansible_become_password="{{ nome_da_variavel }}"` para o privilégio de root, buscando o valor dentro do Vault.
+*   **Segurança:** Nunca suba o arquivo `vars_senhas.yml` para repositórios públicos sem que ele esteja criptografado.
+*   **Handlers:** O `restart` dos serviços só ocorre se o arquivo de certificado for modificado, evitando downtime desnecessário.
 
 ## 🔑 Configuração de Segurança e Acesso
 
 ### 1. Acesso sem senha (SSH RSA)
 Para o Ansible entrar nos servidores, gere e distribua sua chave pública:
 *   **Gerar:** `ssh-keygen -t rsa -b 4096`
-*   **Distribuir:** `ssh-copy-id osboxes@IP_DO_SERVIDOR` (Repita para cada IP do inventário)
+*   **Distribuir:** `ssh-copy-id USER@IP_DO_SERVIDOR` (Repita para cada IP do inventário)
 
 ### 2. Cofre de Senhas (Ansible Vault)
 As senhas de `sudo` de cada servidor não estão mais em texto puro. Elas ficam no arquivo criptografado `vars_senhas.yml`.
@@ -59,12 +64,6 @@ ansible-playbook -i hosts.ini producao_estagio.yml -e "@vars_senhas.yml" --ask-v
 *Ao rodar, o sistema pedirá a **Vault Password**. Digite `123`.*
 
 ---
-
-## ⚠️ Observações Técnicas
-
-*   **Gestão de Variáveis:** No arquivo `hosts.ini`, utilizamos `ansible_user` para o login e `ansible_become_password="{{ nome_da_variavel }}"` para o privilégio de root, buscando o valor dentro do Vault.
-*   **Segurança:** Nunca suba o arquivo `vars_senhas.yml` para repositórios públicos sem que ele esteja criptografado.
-*   **Handlers:** O `restart` dos serviços só ocorre se o arquivo de certificado for modificado, evitando downtime desnecessário.
 
 **Data da última atualização:** 05/05/26
 ```
