@@ -1,76 +1,70 @@
 ---
-
 # 🚀 Automação de Certificados SSL - Infraestrutura UFC Quixadá
 
-Este projeto automatiza a atualização de certificados SSL em **11 servidores** do campus da UFC em Quixadá. Ele utiliza **Ansible** para garantir que os certificados sejam entregues nos diretórios corretos e os serviços sejam reiniciados automaticamente, eliminando erros manuais e reduzindo o tempo de manutenção.
+Este projeto automatiza a atualização de certificados SSL em **11 servidores** do campus. A versão atual utiliza **Ansible Vault** para criptografia de credenciais e um inventário dinâmico, garantindo que senhas de `sudo` diferentes sejam gerenciadas de forma segura e automática.
 
 ## 📋 Pré-requisitos na Máquina de Controle
 
-Antes de começar, instale as dependências necessárias no computador que irá rodar o script:
-
+Instale as dependências no computador que irá rodar o script:
 ```bash
 sudo apt update
 sudo apt install ansible sshpass -y
 ```
 
-## 🔑 Configuração de Acesso (SSH RSA)
+## 🔑 Configuração de Segurança e Acesso
 
-Para que o Ansible gerencie os servidores sem solicitar senha a cada tarefa, configure uma chave RSA na máquina do administrador:
+### 1. Acesso sem senha (SSH RSA)
+Para o Ansible entrar nos servidores, gere e distribua sua chave pública:
+*   **Gerar:** `ssh-keygen -t rsa -b 4096`
+*   **Distribuir:** `ssh-copy-id osboxes@IP_DO_SERVIDOR` (Repita para cada IP do inventário)
 
-1.  **Gerar a chave:** `ssh-keygen -t rsa -b 4096` (aperte Enter em todas as etapas).
-2.  **Distribuir a chave:** Para cada servidor, envie a chave pública usando o usuário definido no `hosts.ini`:
+### 2. Cofre de Senhas (Ansible Vault)
+As senhas de `sudo` de cada servidor não estão mais em texto puro. Elas ficam no arquivo criptografado `vars_senhas.yml`.
+*   **Senha Mestra do Arquivo:** `123`
+*   **deve inserir as senhas reais:**
+    Para editar o arquivo e colocar as senhas corretas de produção, use o comando:
     ```bash
-    ssh-copy-id USER_DO_INVENTARIO@IP_DO_SERVIDOR
+    EDITOR=nano ansible-vault edit vars_senhas.yml
     ```
-   
+    *O editor **Nano** abrirá; basta substituir os valores, salvar (`Ctrl+O`, `Enter`) e sair (`Ctrl+X`).*
 
----
+## 📂 Estrutura e Preparação dos Arquivos
 
-## 📂 Estrutura do Projeto
-
-*   **`producao_estagio.yml`**: Playbook principal com a lógica de distribuição e suporte a Bundles.
-*   **`hosts.ini`**: Arquivo de inventário organizado por grupos (Apache, Nginx, Docker) e usuários específicos.
-*   **Arquivos de Certificado (Substituir pelos reais):**
-    *   `certificado_estagio.cert` (Certificado do domínio)
-    *   `intemediate_estagio.pem` (Certificado Intermediário)
-    *   `gs_root_estagio.pem` (Certificado Raiz)
-    *   `quixada_estagio.key` (Chave Privada)
-
----
+**IMPORTANTE:** Os arquivos de certificado devem estar **na mesma pasta raiz do projeto** para que o Playbook os localize corretamente. Substitua os arquivos de teste pelos oficiais mantendo estes nomes:
+*   `certificado_estagio.cert` (Certificado do domínio)
+*   `intemediate_estagio.pem` (Intermediário)
+*   `gs_root_estagio.pem` (Raiz)
+*   `quixada_estagio.key` (Chave Privada)
 
 ## 🛠️ Como Executar
 
-O projeto é **multi-usuário**. O Ansible lerá automaticamente o usuário de cada servidor configurado no arquivo `hosts.ini`.
+O projeto agora associa automaticamente o usuário e a senha de cada servidor através do `hosts.ini` e do `vars_senhas.yml`.
 
 ### 1. Teste de Conectividade
-Verifique se todos os servidores estão acessíveis e se a chave RSA está funcionando:
 ```bash
 ansible servidores -i hosts.ini -m ping
 ```
 
-
-### 2. Simulação de Segurança (Dry Run)
-**Altamente recomendado.** Simula a entrega sem salvar nada e mostra as diferenças no texto:
+### 2. Simulação (Dry Run)
+Veja as mudanças que seriam feitas sem aplicar nada:
 ```bash
-ansible-playbook -i hosts.ini producao_estagio.yml -K --check --diff
+ansible-playbook -i hosts.ini producao_estagio.yml -e "@vars_senhas.yml" --ask-vault-pass --check --diff
 ```
-
 
 ### 3. Execução Real
-Aplica os certificados e reinicia os serviços necessários:
+Aplica os certificados e reinicia os serviços (Apache, Nginx, Docker):
 ```bash
-ansible-playbook -i hosts.ini producao_estagio.yml -K
+ansible-playbook -i hosts.ini producao_estagio.yml -e "@vars_senhas.yml" --ask-vault-pass
 ```
-
-
----
-
-## ⚠️ Observações Técnicas Importantes
-
-*   **Gestão de Usuários:** No arquivo `hosts.ini`, utilize o parâmetro `ansible_user=USER_AQUI` para definir usuários diferentes para cada servidor conforme a necessidade.
-*   **Independência (HAProxy):** Este servidor requer um bundle unificado contendo a **Chave Privada** no final do arquivo `.pem`. A automação já trata isso via condicional `include_key: true`.
-*   **Marizão (GitLab):** O certificado é enviado como um bundle público (sem a chave privada).
-*   **Handlers:** Os serviços só serão reiniciados se o conteúdo do certificado for efetivamente alterado no destino.
+*Ao rodar, o sistema pedirá a **Vault Password**. Digite `123`.*
 
 ---
-**Data:** 23/04/2026
+
+## ⚠️ Observações Técnicas
+
+*   **Gestão de Variáveis:** No arquivo `hosts.ini`, utilizamos `ansible_user` para o login e `ansible_become_password="{{ nome_da_variavel }}"` para o privilégio de root, buscando o valor dentro do Vault.
+*   **Segurança:** Nunca suba o arquivo `vars_senhas.yml` para repositórios públicos sem que ele esteja criptografado.
+*   **Handlers:** O `restart` dos serviços só ocorre se o arquivo de certificado for modificado, evitando downtime desnecessário.
+
+**Data da última atualização:** 05/05/26
+```
