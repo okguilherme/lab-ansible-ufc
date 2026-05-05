@@ -33,6 +33,24 @@ As senhas de `sudo` de cada servidor não estão mais em texto puro. Elas ficam 
     ```
     *O editor **Nano** abrirá; basta substituir os valores, salvar (`Ctrl+O`, `Enter`) e sair (`Ctrl+X`).*
 
+🔐 Como Alterar a Senha Mestra (Rekey)
+Caso precise alterar a senha de proteção do arquivo vars_senhas.yml, utilize o comando rekey. Isso atualizará a criptografia sem que você precise abrir o arquivo.
+
+No terminal, dentro da pasta do projeto, execute:
+
+Bash
+ansible-vault rekey vars_senhas.yml
+Siga a sequência de segurança que aparecerá no terminal:
+
+Vault password: Digite a senha atual (ex: 123).
+
+New Vault password: Digite a sua nova senha.
+
+Confirm New Vault password: Digite a nova senha novamente para confirmar.
+
+[!TIP]
+Após alterar a senha, o arquivo será modificado. Não esqueça de realizar um novo git add e git push para atualizar a versão criptografada no GitHub.
+
 ## 📂 Estrutura e Preparação dos Arquivos
 
 **IMPORTANTE:** Os arquivos de certificado devem estar **na mesma pasta raiz do projeto** para que o Playbook os localize corretamente. Substitua os arquivos de teste pelos oficiais mantendo estes nomes:
