@@ -66,4 +66,3 @@ ansible-playbook -i hosts.ini producao_estagio.yml -e "@vars_senhas.yml" --ask-v
 ---
 
 **Data da última atualização:** 05/05/26
-```
